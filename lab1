@@ -1,0 +1,72 @@
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://pepper.ru/"
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+}
+
+response = requests.get(url, headers=headers)
+soup = BeautifulSoup(response.text, "html.parser")
+
+# Находим все посты (article)
+posts = soup.find_all('article')
+print(f"Найдено постов: {len(posts)}\n")
+
+for post in posts:
+    # ---- Ссылка из data-permalink ----
+    permalink = post.get('data-permalink')
+    if permalink:
+        link = 'https://pepper.ru/' + permalink.lstrip('/')
+    else:
+        link = 'нет ссылки'
+
+    # ---- Название акции ----
+    title = None
+
+    # Вариант 1: ищем <h2> (часто содержит заголовок)
+    h2 = post.find('h2')
+    if h2:
+        title = h2.get_text(strip=True)
+
+    # Вариант 2: ищем ссылку с классом, похожим на заголовок
+    if not title:
+        title_link = post.find('a', class_=lambda c: c and ('title' in c or 'link' in c))
+        if title_link:
+            title = title_link.get_text(strip=True)
+
+    # Вариант 3: ищем любой тег <a> внутри, но не с пустым текстом
+    if not title:
+        for a in post.find_all('a', href=True):
+            text = a.get_text(strip=True)
+            if text and len(text) > 10:  # предположим, что заголовок достаточно длинный
+                title = text
+                break
+
+    # Вариант 4: если ничего не нашли, возьмём первый тег с текстом (кроме мелких)
+    if not title:
+        # Ищем любой элемент, содержащий текст длиной > 15 символов
+        for elem in post.find_all(string=True):
+            text = elem.strip()
+            if len(text) > 15 and not text.startswith(('http', '//', 'javascript')):
+                title = text
+                break
+ 
+    if not title:
+        title = "Не удалось найти название"
+
+    # ---- Градусы (температура) ----
+    # Ищем span с символом ° (как уже работает)
+    temp_tag = post.find('span', string=lambda t: t and '°' in t)
+    if temp_tag:
+        temperature = temp_tag.get_text(strip=True)
+    else:
+        # Если не нашли по символу, попробуем найти по классу
+        temp_tag = post.find('span', class_=lambda c: c and 'temperature' in c)
+        temperature = temp_tag.get_text(strip=True) if temp_tag else "нет данных"
+
+    # Вывод
+    print("Название:", title)
+    print("Градусы:", temperature)
+    print("Ссылка:", link)
+    print("-" * 50)
