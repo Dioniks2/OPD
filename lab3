@@ -1,0 +1,107 @@
+в файл app.py
+
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+# добавляем ф-ю для проверки пароля
+def check_password_strength(password):
+    score = 0
+    a = []  # список для советов по улучшению пароля
+
+    # Проверка на длину пароля
+    if len(password) >= 8:
+        score += 1  # условие выполнено добавляем балл
+    else:
+        a.append("Пароль слишком короткий (минимум 8 символов).")
+
+    # проверка на наличие хотя бы одной цифры
+    # any() возвращает true, если хоть один элемент в итерации true
+    # char.isdigit() проверяет, является ли символ цифрой
+    if any(char.isdigit() for char in password):
+        score += 1
+    else:
+        a.append("Добавьте хотя бы одну цифру.")
+
+    # проверка на наличие заглавных и строчных букв
+    # .isupper() - проверяет, что буква заглавная
+    # .islower() - проверяет, что буква строчная
+    if any(char.isupper() for char in password) and any(char.islower() for char in password):
+        score += 1
+    else:
+        a.append("Используйте разные регистры (заглавные и строчные буквы).")
+    # проверка на спец символы
+    if any(char in "!@#$%^&*()" for char in password):
+        score += 1
+    else:
+        a.append("Добавьте спецсимвол (например, !, @, #).")
+
+    # Словарь с уровнями надёжности
+    levels = {0: "Очень слабый", 1: "Слабый", 2: "Средний", 3: "Хороший", 4: "Отличный"}
+
+    # Возвращаем уровень (по ключу score) и список советов
+    return levels[score], a
+
+
+# Декоратор, связывающий функцию с URL-адресом '/'
+# methods=['GET', 'POST'] - разрешаем и GET (открытие страницы), и POST (отправка формы)
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    result = None
+    hints = []  # Переменная для списка советов
+
+    # Проверяем, был ли отправлен POST-запрос (пользователь нажал кнопку)
+    if request.method == 'POST':
+        # Получаем значение поля с именем 'password' из отправленной формы
+        password = request.form.get('password')
+        # Вызываем функцию проверки, получаем результат и советы
+        result, hints = check_password_strength(password)
+
+    # Рендерим HTML-шаблон 'index.html' и передаём в него переменные:
+    # ans - результат проверки, hints - список советов
+    return render_template('index.html', ans=result, hints=hints)
+
+
+# Условная конструкция: код выполнится только если файл запущен напрямую
+# (а не импортирован как модуль)
+if __name__ == '__main__':
+    # Запускаем встроенный сервер Flask
+    # debug=True - режим отладки (авто-перезагрузка при изменениях + подробные ошибки)
+    app.run(debug=True)
+
+
+
+
+
+
+
+создать папку templates и в ней  index.html
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Анализатор пароля</title>
+</head>
+<body>
+    <h2>Проверьте сложность вашего пароля</h2>
+    <form method="post">
+        <input type="password" name="password" placeholder="Введите пароль" required>
+        <input type="submit" value="Проверить">
+    </form>
+
+    {% if ans %}
+        <h3>Сложность: {{ ans }}</h3>
+        {% if hints %}
+            <ul>
+                {% for hint in hints %}
+                    <li>{{ hint }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endif %}
+</body>
+</html>
+
+
+http://127.0.0.1:5000/ - ссылка на сайт
