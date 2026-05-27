@@ -1,0 +1,32 @@
+import unittest
+# Импортируем функцию из вашего основного файла app.py
+from app import check_password_strength
+
+class TestPasswordAnalyzer(unittest.TestCase)
+
+    def test_weak_password(self)
+        # Проверяем очень короткий пароль
+        res, hints = check_password_strength(123)
+        self.assertEqual(res, Слабый) # Или Очень слабый в зависимости от вашей логики
+        self.assertIn(Пароль слишком короткий (минимум 8 символов)., hints)
+
+    def test_strong_password(self)
+        # Проверяем сложный пароль (длина, цифры, регистр, спецсимвол)
+        res, hints = check_password_strength(Password123!)
+        self.assertEqual(res, Отличный)
+        self.assertEqual(len(hints), 0) # Советов быть не должно
+
+    def test_no_digits(self)
+        # Проверяем пароль без цифр
+        res, hints = check_password_strength(OnlyLetters!)
+        self.assertIn(Добавьте хотя бы одну цифру., hints)
+
+    def test_no_specials(self)
+        # Проверяем пароль без спецсимволов
+        res, hints = check_password_strength(StrongPass123)
+        self.assertIn(Добавьте спецсимвол (например, !, @, #)., hints)
+        
+        
+
+if __name__ == '__main__'
+    unittest.main()
